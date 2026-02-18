@@ -20,7 +20,7 @@ export default function PlaytimeStats({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <a
-        href={`https://store.steampowered.com/steamaccount/ownedgames?steam_id=${steamId}`}
+        href={`https://steamcommunity.com/profiles/${steamId}/games?tab=all`}
         target="_blank"
         rel="noopener noreferrer"
         className="block"
