@@ -20,7 +20,7 @@ export default function LanguageSwitcher() {
       className="rounded-md px-3 py-1.5 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
       title={t("switchTo")}
     >
-      {locale === "ja" ? "EN" : "JP"}
+      {locale === "ja" ? "JP" : "EN"}
     </button>
   );
 }
