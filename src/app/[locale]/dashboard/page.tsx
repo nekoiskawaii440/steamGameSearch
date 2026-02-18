@@ -6,7 +6,7 @@ import { enrichGamesWithDetails } from "@/lib/steam/store-api";
 import { buildGenreProfile } from "@/lib/recommendation/genre-analyzer";
 import { setCache } from "@/lib/cache/kv";
 import PlaytimeStats from "@/components/dashboard/PlaytimeStats";
-import GenreBreakdown from "@/components/dashboard/GenreBreakdown";
+import EnrichProgress from "@/components/dashboard/EnrichProgress";
 import OwnedGamesList from "@/components/dashboard/OwnedGamesList";
 
 export default async function DashboardPage({
@@ -58,7 +58,8 @@ export default async function DashboardPage({
       recentlyPlayed={recentlyPlayed}
       genreScores={profile.genreScores}
       games={games}
-      pendingCount={pendingAppIds.length}
+      pendingAppIds={pendingAppIds}
+      locale={locale}
     />
   );
 }
@@ -69,14 +70,16 @@ function DashboardContent({
   recentlyPlayed,
   genreScores,
   games,
-  pendingCount,
+  pendingAppIds,
+  locale,
 }: {
   totalGames: number;
   totalPlaytime: number;
   recentlyPlayed: number;
   genreScores: Record<string, number>;
   games: Awaited<ReturnType<typeof getOwnedGames>>;
-  pendingCount: number;
+  pendingAppIds: number[];
+  locale: string;
 }) {
   const t = useTranslations("dashboard");
 
@@ -90,14 +93,13 @@ function DashboardContent({
         recentlyPlayedCount={recentlyPlayed}
       />
 
-      {pendingCount > 0 && (
-        <div className="rounded-lg border border-[#66c0f4]/30 bg-[#66c0f4]/10 px-4 py-2 text-sm text-[#66c0f4]">
-          {t("enriching", { count: pendingCount })}
-        </div>
-      )}
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <GenreBreakdown genreScores={genreScores} />
+        <EnrichProgress
+          pendingAppIds={pendingAppIds}
+          games={games}
+          locale={locale}
+          initialGenreScores={genreScores}
+        />
         <OwnedGamesList games={games} />
       </div>
     </div>
