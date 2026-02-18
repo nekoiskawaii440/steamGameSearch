@@ -77,14 +77,6 @@ export default function GenreBreakdown({
               data={data}
               layout="vertical"
               margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
-              onClick={(e: unknown) => {
-                const ev = e as { activePayload?: { payload?: { genre?: string } }[] } | null;
-                const genre = ev?.activePayload?.[0]?.payload?.genre;
-                if (genre) {
-                  setSelectedGenre((prev) => (prev === genre ? null : genre));
-                }
-              }}
-              style={{ cursor: games.length > 0 ? "pointer" : "default" }}
             >
               <XAxis type="number" hide domain={[0, 100]} />
               <YAxis
@@ -104,7 +96,18 @@ export default function GenreBreakdown({
                 }}
                 formatter={(value) => [`${value}%`, "Score"]}
               />
-              <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={24}>
+              <Bar
+                dataKey="score"
+                radius={[0, 4, 4, 0]}
+                barSize={24}
+                style={{ cursor: games.length > 0 ? "pointer" : "default" }}
+                onClick={(data: unknown) => {
+                  const genre = (data as { genre?: string })?.genre;
+                  if (genre) {
+                    setSelectedGenre((prev) => (prev === genre ? null : genre));
+                  }
+                }}
+              >
                 {data.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
