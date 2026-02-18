@@ -11,6 +11,7 @@ interface EnrichProgressProps {
   games: OwnedGame[];
   locale: string;
   initialGenreScores: Record<string, number>;
+  initialGameDetails: Record<number, AppDetails>;
 }
 
 /**
@@ -22,16 +23,17 @@ export default function EnrichProgress({
   games,
   locale,
   initialGenreScores,
+  initialGameDetails,
 }: EnrichProgressProps) {
   const t = useTranslations("dashboard");
 
   const [remaining, setRemaining] = useState(pendingAppIds.length);
   const [genreScores, setGenreScores] = useState(initialGenreScores);
-  // stateで管理することでGenreBreakdownに再レンダリングを伝える
-  const [accumulatedDetails, setAccumulatedDetails] = useState<Record<number, AppDetails>>({});
+  // サーバー取得済みデータを初期値としてstateに設定
+  const [accumulatedDetails, setAccumulatedDetails] = useState<Record<number, AppDetails>>(initialGameDetails);
 
   // バッチ処理内でのみ使う内部ref（stateと同期）
-  const accumulatedRef = useRef<Record<number, AppDetails>>({});
+  const accumulatedRef = useRef<Record<number, AppDetails>>({ ...initialGameDetails });
   const pendingRef = useRef<number[]>([...pendingAppIds]);
   const isFetching = useRef(false);
 

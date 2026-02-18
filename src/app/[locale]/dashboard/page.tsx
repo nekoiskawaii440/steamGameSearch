@@ -51,6 +51,12 @@ export default async function DashboardPage({
     (g) => g.playtime_2weeks && g.playtime_2weeks > 0
   ).length;
 
+  // サーバー取得済みのジャンルデータを初期値としてクライアントに渡す
+  const initialGameDetails: Record<number, import("@/lib/steam/types").AppDetails> = {};
+  for (const g of enriched) {
+    if (g.details) initialGameDetails[g.appid] = g.details;
+  }
+
   return (
     <DashboardContent
       totalGames={games.length}
@@ -59,6 +65,7 @@ export default async function DashboardPage({
       genreScores={profile.genreScores}
       games={games}
       pendingAppIds={pendingAppIds}
+      initialGameDetails={initialGameDetails}
       locale={locale}
       steamId={steamId}
     />
@@ -72,6 +79,7 @@ function DashboardContent({
   genreScores,
   games,
   pendingAppIds,
+  initialGameDetails,
   locale,
   steamId,
 }: {
@@ -81,6 +89,7 @@ function DashboardContent({
   genreScores: Record<string, number>;
   games: Awaited<ReturnType<typeof getOwnedGames>>;
   pendingAppIds: number[];
+  initialGameDetails: Record<number, import("@/lib/steam/types").AppDetails>;
   locale: string;
   steamId: string;
 }) {
@@ -103,6 +112,7 @@ function DashboardContent({
           games={games}
           locale={locale}
           initialGenreScores={genreScores}
+          initialGameDetails={initialGameDetails}
         />
         <OwnedGamesList games={games} />
       </div>
