@@ -27,9 +27,11 @@ export default function EnrichProgress({
 
   const [remaining, setRemaining] = useState(pendingAppIds.length);
   const [genreScores, setGenreScores] = useState(initialGenreScores);
+  // stateで管理することでGenreBreakdownに再レンダリングを伝える
+  const [accumulatedDetails, setAccumulatedDetails] = useState<Record<number, AppDetails>>({});
 
-  // 取得済みのジャンルデータを累積する ref（render をまたいで保持）
-  const accumulatedDetails = useRef<Record<number, AppDetails>>({});
+  // バッチ処理内でのみ使う内部ref（stateと同期）
+  const accumulatedRef = useRef<Record<number, AppDetails>>({});
   const pendingRef = useRef<number[]>([...pendingAppIds]);
   const isFetching = useRef(false);
 
@@ -81,14 +83,15 @@ export default function EnrichProgress({
         const json = await res.json();
         const fetched: Record<number, AppDetails> = json.results ?? {};
 
-        // 蓄積
-        accumulatedDetails.current = {
-          ...accumulatedDetails.current,
+        // refに蓄積してからstateに反映（GenreBreakdownの再レンダリングを起こす）
+        accumulatedRef.current = {
+          ...accumulatedRef.current,
           ...fetched,
         };
+        setAccumulatedDetails({ ...accumulatedRef.current });
 
         // ジャンルスコアを再計算して更新
-        const newScores = recalcGenreScores(accumulatedDetails.current);
+        const newScores = recalcGenreScores(accumulatedRef.current);
         setGenreScores(newScores);
       }
     } catch {
@@ -133,7 +136,7 @@ export default function EnrichProgress({
       <GenreBreakdown
         genreScores={genreScores}
         games={games}
-        gameDetails={accumulatedDetails.current}
+        gameDetails={accumulatedDetails}
       />
     </>
   );
