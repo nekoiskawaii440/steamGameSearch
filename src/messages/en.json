@@ -1,0 +1,60 @@
+{
+  "common": {
+    "appName": "Steam Game Finder",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "noData": "No data available"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "recommendations": "Recommendations",
+    "login": "Login with Steam",
+    "logout": "Logout"
+  },
+  "landing": {
+    "title": "Find Your Perfect Game",
+    "subtitle": "Analyze your Steam play data and discover games tailored to your preferences",
+    "loginButton": "Login with Steam to Get Started",
+    "features": {
+      "analyze": "Analyze Play Trends",
+      "analyzeDesc": "Visualize your playtime by genre and recent activity",
+      "recommend": "Game Recommendations",
+      "recommendDesc": "Get personalized suggestions for games you don't own yet",
+      "filter": "Filter by Price",
+      "filterDesc": "Narrow down recommendations to fit your budget"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "ownedGames": "Owned Games",
+    "totalGames": "Total Games",
+    "totalPlaytime": "Total Playtime",
+    "hours": "hours",
+    "recentlyPlayed": "Recently Played",
+    "genreBreakdown": "Genre Breakdown",
+    "playtimeStats": "Playtime Stats",
+    "topGames": "Most Played",
+    "privateProfile": "Your Steam profile is private. Set it to public to fetch game data.",
+    "enriching": "Fetching genre info... ({count} remaining)"
+  },
+  "recommendations": {
+    "title": "Recommended Games",
+    "score": "Match Score",
+    "genreMatch": "Genre Match",
+    "popularity": "Popularity",
+    "trend": "Trending",
+    "priceValue": "Price Value",
+    "review": "Reviews",
+    "priceFilter": "Price Filter",
+    "maxPrice": "Max Price",
+    "free": "Free",
+    "currency": "JPY",
+    "noResults": "No games found matching your criteria",
+    "viewOnSteam": "View on Steam",
+    "whyRecommended": "Why Recommended"
+  },
+  "language": {
+    "switchTo": "日本語"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "common": {
+    "appName": "Steam Game Finder",
+    "loading": "読み込み中...",
+    "error": "エラーが発生しました",
+    "retry": "再試行",
+    "noData": "データがありません"
+  },
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "recommendations": "おすすめ",
+    "login": "Steamでログイン",
+    "logout": "ログアウト"
+  },
+  "landing": {
+    "title": "あなたにぴったりのゲームを見つけよう",
+    "subtitle": "Steamのプレイデータを分析して、あなたの好みに合ったゲームをおすすめします",
+    "loginButton": "Steamでログインして始める",
+    "features": {
+      "analyze": "プレイ傾向を分析",
+      "analyzeDesc": "ジャンル別のプレイ時間や最近の傾向を可視化します",
+      "recommend": "ゲームをおすすめ",
+      "recommendDesc": "あなたの嗜好にマッチした未所持ゲームを提案します",
+      "filter": "価格でフィルタ",
+      "filterDesc": "予算に合わせておすすめを絞り込めます"
+    }
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "ownedGames": "所持ゲーム",
+    "totalGames": "ゲーム数",
+    "totalPlaytime": "総プレイ時間",
+    "hours": "時間",
+    "recentlyPlayed": "最近プレイ",
+    "genreBreakdown": "ジャンル分布",
+    "playtimeStats": "プレイ時間統計",
+    "topGames": "よく遊ぶゲーム",
+    "privateProfile": "Steamプロフィールが非公開です。公開設定にすると、ゲームデータを取得できます。",
+    "enriching": "ジャンル情報を取得中... ({count}件残り)"
+  },
+  "recommendations": {
+    "title": "おすすめゲーム",
+    "score": "マッチ度",
+    "genreMatch": "ジャンル一致",
+    "popularity": "人気度",
+    "trend": "トレンド",
+    "priceValue": "価格",
+    "review": "レビュー",
+    "priceFilter": "価格フィルタ",
+    "maxPrice": "上限価格",
+    "free": "無料",
+    "currency": "円",
+    "noResults": "条件に合うゲームが見つかりませんでした",
+    "viewOnSteam": "Steamで見る",
+    "whyRecommended": "おすすめの理由"
+  },
+  "language": {
+    "switchTo": "English"
+  }
+}
