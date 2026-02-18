@@ -40,6 +40,10 @@
     "noRecentGames": "直近2週間のプレイデータがありません",
     "totalShort": "累計",
     "privateProfile": "Steamプロフィールが非公開です。公開設定にすると、ゲームデータを取得できます。",
+    "clickGenreHint": "ジャンルをクリックするとゲーム一覧を表示",
+    "clickToClose": "もう一度クリックで閉じる",
+    "gamesCount": "件",
+    "noGenreGames": "このジャンルのゲームデータがまだ取得されていません",
     "enriching": "ジャンル情報を取得中... ({count}件残り)"
   },
   "recommendations": {

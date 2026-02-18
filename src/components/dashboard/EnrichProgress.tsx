@@ -130,7 +130,11 @@ export default function EnrichProgress({
           {t("enriching", { count: remaining })}
         </div>
       )}
-      <GenreBreakdown genreScores={genreScores} />
+      <GenreBreakdown
+        genreScores={genreScores}
+        games={games}
+        gameDetails={accumulatedDetails.current}
+      />
     </>
   );
 }

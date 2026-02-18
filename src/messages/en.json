@@ -40,6 +40,10 @@
     "noRecentGames": "No games played in the last 2 weeks",
     "totalShort": "total",
     "privateProfile": "Your Steam profile is private. Set it to public to fetch game data.",
+    "clickGenreHint": "Click a genre to see its games",
+    "clickToClose": "Click again to close",
+    "gamesCount": " games",
+    "noGenreGames": "No game data available for this genre yet",
     "enriching": "Fetching genre info... ({count} remaining)"
   },
   "recommendations": {
