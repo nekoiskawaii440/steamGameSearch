@@ -35,6 +35,9 @@
     "genreBreakdown": "Genre Breakdown",
     "playtimeStats": "Playtime Stats",
     "topGames": "Most Played",
+    "recentGames": "Recently Played",
+    "noRecentGames": "No games played in the last 2 weeks",
+    "totalShort": "total",
     "privateProfile": "Your Steam profile is private. Set it to public to fetch game data.",
     "enriching": "Fetching genre info... ({count} remaining)"
   },
