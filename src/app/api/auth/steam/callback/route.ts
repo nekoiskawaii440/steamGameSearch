@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { encode } from "next-auth/jwt";
 
 const STEAM_OPENID_URL = "https://steamcommunity.com/openid/login";
@@ -90,6 +89,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const isSecure = getBaseUrl().startsWith("https");
+
+  // Auth.js が使う Cookie 名
+  const cookieName = isSecure
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
+
   const token = await encode({
     token: {
       sub: profile.id,
@@ -99,7 +105,7 @@ export async function GET(request: NextRequest) {
       exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 days
     },
     secret,
-    salt: "authjs.session-token",
+    salt: cookieName,
   });
 
   // セッションCookieを設定してダッシュボードにリダイレクト
@@ -107,15 +113,8 @@ export async function GET(request: NextRequest) {
     new URL("/ja/dashboard", getBaseUrl())
   );
 
-  const cookieStore = await cookies();
-  const isSecure = getBaseUrl().startsWith("https");
-
-  // Auth.js が使う Cookie 名
-  const cookieName = isSecure
-    ? "__Secure-authjs.session-token"
-    : "authjs.session-token";
-
-  cookieStore.set(cookieName, token, {
+  // response オブジェクトに Cookie を設定する（cookieStore への set は無効）
+  response.cookies.set(cookieName, token, {
     httpOnly: true,
     secure: isSecure,
     sameSite: "lax",
