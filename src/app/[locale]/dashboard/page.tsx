@@ -60,6 +60,7 @@ export default async function DashboardPage({
       games={games}
       pendingAppIds={pendingAppIds}
       locale={locale}
+      steamId={steamId}
     />
   );
 }
@@ -72,6 +73,7 @@ function DashboardContent({
   games,
   pendingAppIds,
   locale,
+  steamId,
 }: {
   totalGames: number;
   totalPlaytime: number;
@@ -80,6 +82,7 @@ function DashboardContent({
   games: Awaited<ReturnType<typeof getOwnedGames>>;
   pendingAppIds: number[];
   locale: string;
+  steamId: string;
 }) {
   const t = useTranslations("dashboard");
 
@@ -91,6 +94,7 @@ function DashboardContent({
         totalGames={totalGames}
         totalPlaytimeMinutes={totalPlaytime}
         recentlyPlayedCount={recentlyPlayed}
+        steamId={steamId}
       />
 
       <div className="flex flex-col gap-6">
