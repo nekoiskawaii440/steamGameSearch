@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { auth } from "@/auth";
 import { redirect } from "@/i18n/navigation";
 import { getOwnedGames } from "@/lib/steam/api";
-import { enrichGamesWithDetails } from "@/lib/steam/store-api";
+import { enrichGamesWithDetails, fillMissingGenres } from "@/lib/steam/store-api";
 import { buildGenreProfile } from "@/lib/recommendation/genre-analyzer";
 import { getRecommendations } from "@/lib/recommendation/scoring";
 import {
@@ -82,7 +82,10 @@ export default async function RecommendationsPage({
   const ownedAppIds = new Set(ownedGames.map((g) => g.appid));
 
   // 有効なソースで候補を取得
-  const candidates = await getCandidatePool(profile.topGenres, enabledSources);
+  const rawCandidates = await getCandidatePool(profile.topGenres, enabledSources);
+
+  // genre="" の候補（top100forever/top100in2weeks 由来）にキャッシュ済み appdetails からジャンルを補完
+  const candidates = await fillMissingGenres(rawCandidates);
 
   // スコアリング
   const recommendations = getRecommendations(

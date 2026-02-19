@@ -1,5 +1,6 @@
-import { getCached } from "@/lib/cache/kv";
+import { getCached, getCache } from "@/lib/cache/kv";
 import type { AppDetails, AppDetailsResponse, OwnedGame, OwnedGameWithDetails } from "./types";
+import type { SteamSpyGame } from "@/lib/recommendation/types";
 
 const STORE_API_BASE = "https://store.steampowered.com/api";
 
@@ -71,6 +72,33 @@ export async function enrichGamesWithDetails(
   }
 
   return { enriched, pendingAppIds };
+}
+
+/**
+ * SteamSpy 候補ゲームのうち genre が空のものに、
+ * Steam Store appdetails キャッシュからジャンル文字列を補完する。
+ *
+ * top100forever / top100in2weeks は SteamSpy が genre="" で返すため、
+ * カード表示とスコアリングのジャンルマッチに使えない。
+ * appdetails は既に enrichGamesWithDetails でキャッシュ済みのものを優先し、
+ * 未キャッシュは取得しない（レスポンス時間を増やさない）。
+ */
+export async function fillMissingGenres(
+  candidates: SteamSpyGame[]
+): Promise<SteamSpyGame[]> {
+  return Promise.all(
+    candidates.map(async (game) => {
+      // genre が既に入っていれば何もしない
+      if (game.genre) return game;
+
+      // キャッシュのみ参照（未取得は fetch しない）
+      const cached = await getCache<AppDetails>(`appdetails:${game.appid}:en_jp`);
+      if (!cached?.genres?.length) return game;
+
+      const genreStr = cached.genres.map((g) => g.description).join(", ");
+      return { ...game, genre: genreStr };
+    })
+  );
 }
 
 /**
