@@ -1,4 +1,4 @@
-import { getCached, getCache } from "@/lib/cache/kv";
+import { getCached, getCache } from "@/lib/cache/kv"; // getCache: fillMissingGenres で使用
 import type { AppDetails, AppDetailsResponse, OwnedGame, OwnedGameWithDetails } from "./types";
 import type { SteamSpyGame } from "@/lib/recommendation/types";
 
@@ -75,51 +75,26 @@ export async function enrichGamesWithDetails(
 }
 
 /**
- * SteamSpy 候補ゲームのうち genre が空のものにジャンル文字列を補完する。
+ * SteamSpy 候補ゲームのうち genre が空のものに、
+ * キャッシュ済みの Steam Store appdetails からジャンル文字列を補完する。
  *
- * top100forever / top100in2weeks は SteamSpy が genre="" で返すため、
- * カード表示とスコアリングのジャンルマッチに使えない。
- *
- * 補完の優先順位:
- *   1. Steam Store appdetails キャッシュ（既にユーザー所持ゲームで取得済み）
- *   2. SteamSpy 個別 API（?request=appdetails&appid=XXX）— 24h キャッシュ
+ * top100forever / top100in2weeks は SteamSpy が genre="" で返す。
+ * ユーザーが所持していれば enrichGamesWithDetails でキャッシュ済みなので補完できる。
+ * 未キャッシュは fetch せずスキップ（タイムアウト防止）。
  */
 export async function fillMissingGenres(
   candidates: SteamSpyGame[]
 ): Promise<SteamSpyGame[]> {
   return Promise.all(
     candidates.map(async (game) => {
-      // genre が既に入っていれば何もしない
       if (game.genre) return game;
 
-      // ① Steam Store appdetails キャッシュを参照（fetch なし）
+      // キャッシュのみ参照（fetch なし）
       const cached = await getCache<AppDetails>(`appdetails:${game.appid}:en_jp`);
-      if (cached?.genres?.length) {
-        const genreStr = cached.genres.map((g) => g.description).join(", ");
-        return { ...game, genre: genreStr };
-      }
+      if (!cached?.genres?.length) return game;
 
-      // ② SteamSpy 個別 API からジャンルを取得（24h キャッシュ）
-      const spyGenre = await getCached<string>(
-        `steamspy:genre_str:${game.appid}`,
-        async () => {
-          try {
-            const res = await fetch(
-              `https://steamspy.com/api.php?request=appdetails&appid=${game.appid}`,
-              { signal: AbortSignal.timeout(4000) }
-            );
-            if (!res.ok) return "";
-            const data = await res.json();
-            return (data?.genre as string) ?? "";
-          } catch {
-            return "";
-          }
-        },
-        24 * 3600
-      );
-
-      if (spyGenre) return { ...game, genre: spyGenre };
-      return game;
+      const genreStr = cached.genres.map((g) => g.description).join(", ");
+      return { ...game, genre: genreStr };
     })
   );
 }
