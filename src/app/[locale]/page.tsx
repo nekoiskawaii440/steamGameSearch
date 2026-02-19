@@ -27,7 +27,7 @@ function LandingContent() {
       <h1 className="mb-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
         {t("title")}
       </h1>
-      <p className="mb-8 max-w-lg text-lg text-gray-400">
+      <p className="mb-8 max-w-2xl text-lg text-gray-400">
         {t("subtitle")}
       </p>
 
@@ -38,17 +38,14 @@ function LandingContent() {
         <FeatureCard
           title={t("features.analyze")}
           description={t("features.analyzeDesc")}
-          icon="📊"
         />
         <FeatureCard
           title={t("features.recommend")}
           description={t("features.recommendDesc")}
-          icon="🎮"
         />
         <FeatureCard
           title={t("features.filter")}
           description={t("features.filterDesc")}
-          icon="💰"
         />
       </div>
     </div>
@@ -58,15 +55,12 @@ function LandingContent() {
 function FeatureCard({
   title,
   description,
-  icon,
 }: {
   title: string;
   description: string;
-  icon: string;
 }) {
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900/30 p-6 text-center">
-      <div className="mb-3 text-3xl">{icon}</div>
       <h3 className="mb-2 font-semibold text-gray-200">{title}</h3>
       <p className="text-sm text-gray-500">{description}</p>
     </div>
