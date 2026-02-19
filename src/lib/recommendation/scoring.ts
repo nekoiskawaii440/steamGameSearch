@@ -1,24 +1,28 @@
 import type { GenreProfile, SteamSpyGame, ScoredGame } from "./types";
 
 /**
- * 候補ゲームをスコアリング
+ * 候補ゲームをスコアリング（100点満点）
+ *
+ * 配点:
+ *   ジャンル一致度  0-40点  ← genreScores（合成済みスコア）との一致
+ *   人気度          0-20点  ← 所有者数（対数スケール）
+ *   最近のトレンド  0-15点  ← 直近2週間プレイヤー比率
+ *   価格適合度      0-15点  ← 価格帯に応じた加点
+ *   レビュー評価    0-10点  ← 好評率
  */
 function scoreCandidate(
   candidate: SteamSpyGame,
   userProfile: GenreProfile
 ): ScoredGame {
   const candidateGenres = candidate.genre
-    ? candidate.genre.split(",").map((g) => g.trim())
+    ? candidate.genre.split(",").map((g) => g.trim()).filter(Boolean)
     : [];
 
-  // ジャンル一致度 (0-40)
+  // --- ジャンル一致度 (0-40) ---
+  // genreScores は「直近×0.5 + 集中度×0.3 + 総合×0.2」で合成済みのスコア
   let genreMatchRaw = 0;
   for (const genre of candidateGenres) {
-    // 総合嗜好との一致
-    const baseScore = userProfile.genreScores[genre] ?? 0;
-    // 最近の傾向との一致（ブースト）
-    const recentScore = userProfile.recentGenreScores[genre] ?? 0;
-    genreMatchRaw += baseScore * 0.7 + recentScore * 0.3;
+    genreMatchRaw += userProfile.genreScores[genre] ?? 0;
   }
   const genreMatch = Math.min(
     40,
@@ -27,24 +31,26 @@ function scoreCandidate(
       : 0
   );
 
-  // 人気度 (0-20): 所有者数の対数スケール
+  // --- 人気度 (0-20) ---
+  // 新作（owners=0）は人気度0だが、ジャンル一致が高ければ上位に出る設計
   const popularityRaw =
     candidate.owners > 0 ? Math.log10(candidate.owners) / 8 : 0;
   const popularity = Math.min(20, popularityRaw * 20);
 
-  // 最近のトレンド (0-15): 直近2週間のプレイヤー比率
+  // --- 最近のトレンド (0-15) ---
+  // 新作（players_2weeks=0）はトレンド0。新作はジャンル一致で勝負させる
   const trendRatio =
     candidate.owners > 0
       ? candidate.players_2weeks / candidate.owners
       : 0;
   const recentTrend = Math.min(15, trendRatio * 150);
 
-  // 価格適合度 (0-15)
+  // --- 価格適合度 (0-15) ---
   let priceValue: number;
   if (candidate.price === 0) {
     priceValue = 8; // 無料ゲーム
   } else if (candidate.price <= 1000) {
-    priceValue = 15; // ~$10 / ~1000円
+    priceValue = 15; // ~1,000円
   } else if (candidate.price <= 2000) {
     priceValue = 13;
   } else if (candidate.price <= 4000) {
@@ -55,12 +61,12 @@ function scoreCandidate(
     priceValue = 5;
   }
 
-  // レビュー評価 (0-10)
+  // --- レビュー評価 (0-10) ---
   const totalReviews = candidate.positive + candidate.negative;
   const reviewScore =
     totalReviews > 0
       ? (candidate.positive / totalReviews) * 10
-      : 5; // レビュー不明は中間
+      : 5; // レビュー不明（新作など）は中間値
 
   const totalScore =
     genreMatch + popularity + recentTrend + priceValue + reviewScore;
@@ -93,8 +99,8 @@ export function getRecommendations(
   limit: number = 20
 ): ScoredGame[] {
   return candidates
-    .filter((c) => !ownedAppIds.has(c.appid)) // 所持済みを除外
-    .filter((c) => maxPrice == null || c.price <= maxPrice) // 価格フィルタ
+    .filter((c) => !ownedAppIds.has(c.appid))
+    .filter((c) => maxPrice == null || c.price <= maxPrice)
     .map((c) => scoreCandidate(c, userProfile))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
