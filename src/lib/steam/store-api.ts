@@ -1,6 +1,6 @@
-import { getCached, getCache } from "@/lib/cache/kv"; // getCache: fillMissingGenres で使用
+import { getCached } from "@/lib/cache/kv";
 import type { AppDetails, AppDetailsResponse, OwnedGame, OwnedGameWithDetails } from "./types";
-import type { SteamSpyGame } from "@/lib/recommendation/types";
+import type { ScoredGame } from "@/lib/recommendation/types";
 
 const STORE_API_BASE = "https://store.steampowered.com/api";
 
@@ -75,26 +75,28 @@ export async function enrichGamesWithDetails(
 }
 
 /**
- * SteamSpy 候補ゲームのうち genre が空のものに、
- * キャッシュ済みの Steam Store appdetails からジャンル文字列を補完する。
+ * スコアリング済みの推薦ゲームに Steam Store appdetails からジャンルを補完する。
  *
- * top100forever / top100in2weeks は SteamSpy が genre="" で返す。
- * ユーザーが所持していれば enrichGamesWithDetails でキャッシュ済みなので補完できる。
- * 未キャッシュは fetch せずスキップ（タイムアウト防止）。
+ * top100forever / top100in2weeks は SteamSpy が genre="" で返すため
+ * スコアリング後も genres[] が空になる。
+ * 上位N件に限定して getAppDetails を並行フェッチし genres を埋める。
+ * getAppDetails は 7日キャッシュ付きなので初回のみ fetch、以降は即座に返る。
  */
-export async function fillMissingGenres(
-  candidates: SteamSpyGame[]
-): Promise<SteamSpyGame[]> {
+export async function enrichScoredGameGenres(
+  games: ScoredGame[]
+): Promise<ScoredGame[]> {
   return Promise.all(
-    candidates.map(async (game) => {
-      if (game.genre) return game;
+    games.map(async (game) => {
+      // genres が既に入っていれば何もしない
+      if (game.genres.length > 0) return game;
 
-      // キャッシュのみ参照（fetch なし）
-      const cached = await getCache<AppDetails>(`appdetails:${game.appid}:en_jp`);
-      if (!cached?.genres?.length) return game;
+      const details = await getAppDetails(game.appid);
+      if (!details?.genres?.length) return game;
 
-      const genreStr = cached.genres.map((g) => g.description).join(", ");
-      return { ...game, genre: genreStr };
+      return {
+        ...game,
+        genres: details.genres.map((g) => g.description),
+      };
     })
   );
 }
