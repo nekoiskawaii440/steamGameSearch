@@ -5,21 +5,24 @@ const STORE_API_BASE = "https://store.steampowered.com/api";
 
 /**
  * Steam Store API からゲーム詳細を取得（ジャンル・価格情報）
+ *
+ * ジャンル名は SteamSpy と一致させるため英語固定（l=english）。
+ * 価格は日本円で取得するため cc=jp を固定。
+ * キャッシュキーは appId のみ（言語非依存）。
  * キャッシュ: 7日
  */
 export async function getAppDetails(
   appId: number,
-  locale: string = "ja"
+  _locale: string = "ja" // 後方互換のため引数は残すが使用しない
 ): Promise<AppDetails | null> {
   return getCached(
-    `appdetails:${appId}:${locale}`,
+    `appdetails:${appId}:en_jp`, // en=英語ジャンル名, jp=円価格
     async () => {
       try {
-        const lang = locale === "ja" ? "japanese" : "english";
-        const cc = locale === "ja" ? "jp" : "us";
-
         const res = await fetch(
-          `${STORE_API_BASE}/appdetails?appids=${appId}&l=${lang}&cc=${cc}`,
+          // l=english: ジャンル名をSteamSpyと一致する英語で取得
+          // cc=jp: 価格を日本円で取得
+          `${STORE_API_BASE}/appdetails?appids=${appId}&l=english&cc=jp`,
           { signal: AbortSignal.timeout(5000) }
         );
 
