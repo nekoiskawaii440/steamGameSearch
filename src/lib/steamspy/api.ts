@@ -134,7 +134,7 @@ export async function getTopGamesAllTime(): Promise<SteamSpyGame[]> {
  */
 export async function getNewReleases(): Promise<SteamSpyGame[]> {
   return getCached(
-    "steam:new_releases",
+    "steam:new_releases:v2", // v2: price÷100修正済み
     async () => {
       try {
         const res = await fetch(
@@ -149,15 +149,16 @@ export async function getNewReleases(): Promise<SteamSpyGame[]> {
 
         // Steam Store の新作情報を SteamSpyGame 形式に変換
         // owners / players_2weeks は不明なので 0 にしておく（スコアリング側で扱う）
+        // final_price は cc=jp でもセント単位（例: 198000 = 1,980円）なので ÷100 する
         return items.map((item) => ({
           appid: item.id,
           name: item.name,
           owners: 0,
           players_2weeks: 0,
-          price: item.final_price ?? 0, // セント単位（JPYの場合は円単位）
+          price: Math.round((item.final_price ?? 0) / 100), // セント → 円
           positive: 0,
           negative: 0,
-          genre: "", // ジャンル情報なし（スコアリング時に0点になる）
+          genre: "", // ジャンル情報なし（fillMissingGenres で補完）
         }));
       } catch {
         return [];
@@ -174,7 +175,7 @@ export async function getNewReleases(): Promise<SteamSpyGame[]> {
  */
 export async function getSaleGames(): Promise<SteamSpyGame[]> {
   return getCached(
-    "steam:sale_games",
+    "steam:sale_games:v2", // v2: price÷100修正済み
     async () => {
       try {
         const res = await fetch(
@@ -187,15 +188,16 @@ export async function getSaleGames(): Promise<SteamSpyGame[]> {
         const items: Array<{ id: number; name: string; final_price?: number; original_price?: number }> =
           data?.specials?.items ?? [];
 
+        // final_price は cc=jp でもセント単位なので ÷100 する
         return items.map((item) => ({
           appid: item.id,
           name: item.name,
           owners: 0,
           players_2weeks: 0,
-          price: item.final_price ?? 0,
+          price: Math.round((item.final_price ?? 0) / 100), // セント → 円
           positive: 0,
           negative: 0,
-          genre: "",
+          genre: "", // ジャンル情報なし（fillMissingGenres で補完）
         }));
       } catch {
         return [];
