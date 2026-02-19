@@ -71,7 +71,13 @@
     "refreshing": "取得中...",
     "refreshDone": "更新完了 — ページを再読み込みするとおすすめに反映されます",
     "refreshError": "取得に失敗しました。しばらくしてから再試行してください",
-    "reloadButton": "おすすめを更新する"
+    "reloadButton": "おすすめを更新する",
+    "poolSelectorTitle": "候補プール",
+    "poolGenre": "ジャンル一致",
+    "poolClassic": "クラシック",
+    "poolNew": "新作",
+    "poolTrend": "トレンド",
+    "poolSale": "セール中"
   },
   "language": {
     "switchTo": "English"

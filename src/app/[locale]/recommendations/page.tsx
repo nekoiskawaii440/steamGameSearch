@@ -5,20 +5,39 @@ import { getOwnedGames } from "@/lib/steam/api";
 import { enrichGamesWithDetails } from "@/lib/steam/store-api";
 import { buildGenreProfile } from "@/lib/recommendation/genre-analyzer";
 import { getRecommendations } from "@/lib/recommendation/scoring";
-import { getCandidatePool } from "@/lib/steamspy/api";
+import {
+  getCandidatePool,
+  DEFAULT_POOL_SOURCES,
+  type PoolSource,
+} from "@/lib/steamspy/api";
 import { getCache } from "@/lib/cache/kv";
 import type { GenreProfile } from "@/lib/recommendation/types";
 import RecommendationList from "@/components/recommendations/RecommendationList";
 import ProfileSummary from "@/components/recommendations/ProfileSummary";
 import RefreshProfileButton from "@/components/recommendations/RefreshProfileButton";
+import PoolSelector from "@/components/recommendations/PoolSelector";
+
+/** URLの ?pool=genre,classic,... を解析して PoolSource[] に変換 */
+function parsePoolSources(poolParam: string | undefined): PoolSource[] {
+  if (!poolParam) return DEFAULT_POOL_SOURCES;
+  const valid = new Set<PoolSource>(["genre", "classic", "new", "trend", "sale"]);
+  const parsed = poolParam
+    .split(",")
+    .map((s) => s.trim() as PoolSource)
+    .filter((s) => valid.has(s));
+  return parsed.length > 0 ? parsed : DEFAULT_POOL_SOURCES;
+}
 
 export default async function RecommendationsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await auth();
   const { locale } = await params;
+  const resolvedSearchParams = await searchParams;
 
   if (!session?.user) {
     redirect({ href: "/", locale });
@@ -26,6 +45,12 @@ export default async function RecommendationsPage({
   }
 
   const steamId = session.user.id;
+
+  // URLから候補プールソースを解析
+  const poolParam = typeof resolvedSearchParams.pool === "string"
+    ? resolvedSearchParams.pool
+    : undefined;
+  const enabledSources = parsePoolSources(poolParam);
 
   // キャッシュからプロファイルを取得、なければ再構築
   let profile = await getCache<GenreProfile>(
@@ -56,8 +81,8 @@ export default async function RecommendationsPage({
   const ownedGames = await getOwnedGames(steamId);
   const ownedAppIds = new Set(ownedGames.map((g) => g.appid));
 
-  // SteamSpy から候補を取得
-  const candidates = await getCandidatePool(profile.topGenres);
+  // 有効なソースで候補を取得
+  const candidates = await getCandidatePool(profile.topGenres, enabledSources);
 
   // スコアリング
   const recommendations = getRecommendations(
@@ -71,6 +96,7 @@ export default async function RecommendationsPage({
       recommendations={recommendations}
       profile={profile}
       analyzedGameCount={analyzedGameCount}
+      currentSources={enabledSources}
     />
   );
 }
@@ -79,10 +105,12 @@ function RecommendationsContent({
   recommendations,
   profile,
   analyzedGameCount,
+  currentSources,
 }: {
   recommendations: Awaited<ReturnType<typeof getRecommendations>>;
   profile: GenreProfile;
   analyzedGameCount: number;
+  currentSources: PoolSource[];
 }) {
   const t = useTranslations("recommendations");
 
@@ -92,6 +120,9 @@ function RecommendationsContent({
 
       {/* 趣向分析サマリー */}
       <ProfileSummary profile={profile} analyzedGameCount={analyzedGameCount} />
+
+      {/* 候補プール選択 */}
+      <PoolSelector currentSources={currentSources} />
 
       {/* プロファイル最適化ボタン */}
       <RefreshProfileButton />

@@ -71,7 +71,13 @@
     "refreshing": "Fetching...",
     "refreshDone": "Done — reload the page to reflect updated recommendations",
     "refreshError": "Fetch failed. Please try again later.",
-    "reloadButton": "Reload Recommendations"
+    "reloadButton": "Reload Recommendations",
+    "poolSelectorTitle": "Candidate Pool",
+    "poolGenre": "Genre Match",
+    "poolClassic": "Classics",
+    "poolNew": "New Releases",
+    "poolTrend": "Trending",
+    "poolSale": "On Sale"
   },
   "language": {
     "switchTo": "日本語"

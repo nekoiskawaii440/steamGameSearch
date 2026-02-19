@@ -162,34 +162,86 @@ export async function getNewReleases(): Promise<SteamSpyGame[]> {
 }
 
 /**
+ * Steam Store のセール中ゲームを取得（セール枠）
+ * featuredcategories API の specials を利用
+ * キャッシュ: 1時間（セール情報は頻繁に変わる可能性がある）
+ */
+export async function getSaleGames(): Promise<SteamSpyGame[]> {
+  return getCached(
+    "steam:sale_games",
+    async () => {
+      try {
+        const res = await fetch(
+          "https://store.steampowered.com/api/featuredcategories?cc=jp&l=japanese",
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!res.ok) return [];
+
+        const data = await res.json();
+        const items: Array<{ id: number; name: string; final_price?: number; original_price?: number }> =
+          data?.specials?.items ?? [];
+
+        return items.map((item) => ({
+          appid: item.id,
+          name: item.name,
+          owners: 0,
+          players_2weeks: 0,
+          price: item.final_price ?? 0,
+          positive: 0,
+          negative: 0,
+          genre: "",
+        }));
+      } catch {
+        return [];
+      }
+    },
+    1 * 3600
+  );
+}
+
+/** 有効な候補ソース種別 */
+export type PoolSource = "genre" | "classic" | "new" | "trend" | "sale";
+
+/** デフォルトで有効にするソース */
+export const DEFAULT_POOL_SOURCES: PoolSource[] = ["genre", "classic", "new", "trend"];
+
+/**
  * 推薦候補プールを構築
  *
- * 構成:
- *   - ユーザーの上位5ジャンル別リスト（ジャンル適合の核）
- *   - top100in2weeks（トレンド枠）
- *   - top100forever（名作・ニッチ枠）
- *   - new_releases（新作枠）
+ * 構成（enabledSources で制御）:
+ *   - genre  : ユーザーの上位5ジャンル別リスト（ジャンル適合の核）
+ *   - classic: top100forever（名作・ニッチ枠）
+ *   - trend  : top100in2weeks（トレンド枠）
+ *   - new    : new_releases（新作枠）
+ *   - sale   : specials（セール中枠）
  */
 export async function getCandidatePool(
-  topGenres: string[]
+  topGenres: string[],
+  enabledSources: PoolSource[] = DEFAULT_POOL_SOURCES
 ): Promise<SteamSpyGame[]> {
+  const enabled = new Set(enabledSources);
+
   try {
-    // 全ソースを並行取得
-    const [genreResults, trending, allTime, newReleases] =
+    // 有効なソースのみ並行取得
+    const [genreResults, allTime, trending, newReleases, saleGames] =
       await Promise.all([
-        Promise.all(topGenres.map((genre) => getGamesByGenre(genre))),
-        getTopGamesRecent(),
-        getTopGamesAllTime(),
-        getNewReleases(),
+        enabled.has("genre")
+          ? Promise.all(topGenres.map((genre) => getGamesByGenre(genre)))
+          : Promise.resolve([[] as SteamSpyGame[]]),
+        enabled.has("classic") ? getTopGamesAllTime() : Promise.resolve([] as SteamSpyGame[]),
+        enabled.has("trend")   ? getTopGamesRecent()  : Promise.resolve([] as SteamSpyGame[]),
+        enabled.has("new")     ? getNewReleases()      : Promise.resolve([] as SteamSpyGame[]),
+        enabled.has("sale")    ? getSaleGames()        : Promise.resolve([] as SteamSpyGame[]),
       ]);
 
-    // 優先度順に結合（ジャンル一致 > 名作 > トレンド > 新作）
+    // 優先度順に結合（ジャンル一致 > 名作 > トレンド > 新作 > セール）
     // 重複除去時は先に出てきた方を優先するため順序が重要
     const allCandidates = [
       ...genreResults.flat(), // ① ジャンル別（最優先）
       ...allTime,             // ② 名作（ニッチ枠）
       ...trending,            // ③ トレンド
       ...newReleases,         // ④ 新作
+      ...saleGames,           // ⑤ セール中
     ];
 
     const seen = new Set<number>();
