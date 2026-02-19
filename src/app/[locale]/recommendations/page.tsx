@@ -84,8 +84,11 @@ export default async function RecommendationsPage({
   // 有効なソースで候補を取得
   const rawCandidates = await getCandidatePool(profile.topGenres, enabledSources);
 
-  // genre="" の候補（top100forever/top100in2weeks 由来）にキャッシュ済み appdetails からジャンルを補完
-  const candidates = await fillMissingGenres(rawCandidates);
+  // genre="" の候補（top100forever/top100in2weeks/new_releases 由来）に
+  // appdetails キャッシュ or SteamSpy 個別 API からジャンルを補完
+  // ※ 所持済みを先に除外してリクエスト数を削減
+  const unowned = rawCandidates.filter((c) => !ownedAppIds.has(c.appid));
+  const candidates = await fillMissingGenres(unowned);
 
   // スコアリング
   const recommendations = getRecommendations(
