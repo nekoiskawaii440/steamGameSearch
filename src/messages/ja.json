@@ -60,7 +60,18 @@
     "currency": "円",
     "noResults": "条件に合うゲームが見つかりませんでした",
     "viewOnSteam": "Steamで見る",
-    "whyRecommended": "おすすめの理由"
+    "whyRecommended": "おすすめの理由",
+    "profileSummaryTitle": "あなたの現在の趣向分析",
+    "profileSummaryDesc": "以下のジャンルへの関心度をもとにおすすめを算出しています。ジャンル情報の取得が不十分な場合、精度が下がることがあります。",
+    "topGenresLabel": "上位ジャンル",
+    "analyzedGames": "分析済みゲーム数",
+    "refreshTitle": "おすすめの精度を上げる",
+    "refreshDesc": "ダッシュボードでジャンル情報の取得が完了していない場合、ここで再取得してプロファイルを更新できます。",
+    "refreshButton": "プロファイルを最新化する",
+    "refreshing": "取得中...",
+    "refreshDone": "更新完了 — ページを再読み込みするとおすすめに反映されます",
+    "refreshError": "取得に失敗しました。しばらくしてから再試行してください",
+    "reloadButton": "おすすめを更新する"
   },
   "language": {
     "switchTo": "English"

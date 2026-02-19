@@ -9,6 +9,8 @@ import { getCandidatePool } from "@/lib/steamspy/api";
 import { getCache } from "@/lib/cache/kv";
 import type { GenreProfile } from "@/lib/recommendation/types";
 import RecommendationList from "@/components/recommendations/RecommendationList";
+import ProfileSummary from "@/components/recommendations/ProfileSummary";
+import RefreshProfileButton from "@/components/recommendations/RefreshProfileButton";
 
 export default async function RecommendationsPage({
   params,
@@ -30,6 +32,8 @@ export default async function RecommendationsPage({
     `user:${steamId}:profile`
   );
 
+  let analyzedGameCount = 0;
+
   if (!profile) {
     const games = await getOwnedGames(steamId);
     const { enriched } = await enrichGamesWithDetails(
@@ -38,6 +42,10 @@ export default async function RecommendationsPage({
       7000
     );
     profile = buildGenreProfile(enriched);
+    analyzedGameCount = enriched.filter((g) => g.details?.genres?.length).length;
+  } else {
+    // キャッシュから取得した場合は totalGames を使って近似値を表示
+    analyzedGameCount = profile.totalGames;
   }
 
   if (profile.topGenres.length === 0) {
@@ -58,19 +66,36 @@ export default async function RecommendationsPage({
     ownedAppIds
   );
 
-  return <RecommendationsContent recommendations={recommendations} />;
+  return (
+    <RecommendationsContent
+      recommendations={recommendations}
+      profile={profile}
+      analyzedGameCount={analyzedGameCount}
+    />
+  );
 }
 
 function RecommendationsContent({
   recommendations,
+  profile,
+  analyzedGameCount,
 }: {
   recommendations: Awaited<ReturnType<typeof getRecommendations>>;
+  profile: GenreProfile;
+  analyzedGameCount: number;
 }) {
   const t = useTranslations("recommendations");
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
+
+      {/* 趣向分析サマリー */}
+      <ProfileSummary profile={profile} analyzedGameCount={analyzedGameCount} />
+
+      {/* プロファイル最適化ボタン */}
+      <RefreshProfileButton />
+
       <RecommendationList games={recommendations} />
     </div>
   );

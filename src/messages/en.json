@@ -60,7 +60,18 @@
     "currency": "JPY",
     "noResults": "No games found matching your criteria",
     "viewOnSteam": "View on Steam",
-    "whyRecommended": "Why Recommended"
+    "whyRecommended": "Why Recommended",
+    "profileSummaryTitle": "Your Current Taste Profile",
+    "profileSummaryDesc": "Recommendations are based on your interest in the following genres. Accuracy may be lower if genre data is incomplete.",
+    "topGenresLabel": "Top Genres",
+    "analyzedGames": "Analyzed Games",
+    "refreshTitle": "Improve Recommendation Accuracy",
+    "refreshDesc": "If genre data fetching was incomplete on the Dashboard, you can re-fetch here to update your profile.",
+    "refreshButton": "Refresh Profile",
+    "refreshing": "Fetching...",
+    "refreshDone": "Done — reload the page to reflect updated recommendations",
+    "refreshError": "Fetch failed. Please try again later.",
+    "reloadButton": "Reload Recommendations"
   },
   "language": {
     "switchTo": "日本語"
