@@ -22,7 +22,7 @@ export interface SteamSpyGame {
   name: string;
   owners: number; // 所有者数（中央値推定）
   players_2weeks: number;
-  price: number; // セント単位
+  price: number; // 円単位（SteamSpy はセント→円変換済み、Store API は元から円）
   positive: number;
   negative: number;
   genre: string; // カンマ区切り
@@ -41,7 +41,7 @@ export interface ScoredGame {
     priceValue: number; // 0-15
     reviewScore: number; // 0-10
   };
-  price: number | null; // セント単位, null = 不明
+  price: number | null; // 円単位, null = 不明
   genres: string[];
   headerImage: string;
 }

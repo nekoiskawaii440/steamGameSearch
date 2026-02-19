@@ -39,26 +39,29 @@ export default function RecommendationCard({
         />
       </a>
 
-      <h3 className="mb-1 truncate text-base font-semibold text-gray-100">
+      <h3 className="mb-1.5 truncate text-base font-semibold text-gray-100">
         {game.name}
       </h3>
+
+      {/* ジャンルタグ */}
+      {game.genres.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {game.genres.slice(0, 3).map((genre) => (
+            <span
+              key={genre}
+              className="rounded bg-gray-800 px-2 py-0.5 text-xs text-gray-500"
+            >
+              {genre}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="mb-2 flex items-center gap-2">
         <span className="rounded-full bg-[#66c0f4]/20 px-2 py-0.5 text-sm font-medium text-[#66c0f4]">
           {t("score")}: {game.score}
         </span>
         <span className="text-sm text-gray-400">{priceDisplay}</span>
-      </div>
-
-      <div className="mb-2 flex flex-wrap gap-1">
-        {game.genres.slice(0, 3).map((genre) => (
-          <span
-            key={genre}
-            className="rounded bg-gray-800 px-2 py-0.5 text-xs text-gray-400"
-          >
-            {genre}
-          </span>
-        ))}
       </div>
 
       <button

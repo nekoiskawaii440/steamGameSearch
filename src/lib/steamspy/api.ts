@@ -29,17 +29,23 @@ function parseOwnerRange(owners: string): number {
 
 /**
  * SteamSpy のレスポンスを正規化
+ *
+ * SteamSpy の price はセント単位（例: 198000 = 1,980円）なので
+ * ÷100 して円単位に変換する。
+ * Steam Store API 系（new_releases, specials）は最初から円単位で格納するため変換不要。
  */
 function normalizeSteamSpyGame(raw: SteamSpyRawGame): SteamSpyGame {
+  const priceRaw =
+    typeof raw.price === "string"
+      ? parseInt(raw.price, 10) || 0
+      : raw.price || 0;
+
   return {
     appid: raw.appid,
     name: raw.name,
     owners: parseOwnerRange(raw.owners),
     players_2weeks: raw.players_2weeks || 0,
-    price:
-      typeof raw.price === "string"
-        ? parseInt(raw.price, 10) || 0
-        : raw.price || 0,
+    price: Math.round(priceRaw / 100), // セント → 円
     positive: raw.positive || 0,
     negative: raw.negative || 0,
     genre: raw.genre || "",

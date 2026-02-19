@@ -46,19 +46,20 @@ function scoreCandidate(
   const recentTrend = Math.min(15, trendRatio * 150);
 
   // --- 価格適合度 (0-15) ---
+  // candidate.price は円単位（SteamSpy はセント→円変換済み、Store API は元から円）
   let priceValue: number;
   if (candidate.price === 0) {
     priceValue = 8; // 無料ゲーム
   } else if (candidate.price <= 1000) {
     priceValue = 15; // ~1,000円
   } else if (candidate.price <= 2000) {
-    priceValue = 13;
+    priceValue = 13; // ~2,000円
   } else if (candidate.price <= 4000) {
-    priceValue = 10;
+    priceValue = 10; // ~4,000円
   } else if (candidate.price <= 6000) {
-    priceValue = 7;
+    priceValue = 7;  // ~6,000円
   } else {
-    priceValue = 5;
+    priceValue = 5;  // 6,000円超
   }
 
   // --- レビュー評価 (0-10) ---
@@ -95,7 +96,7 @@ export function getRecommendations(
   candidates: SteamSpyGame[],
   userProfile: GenreProfile,
   ownedAppIds: Set<number>,
-  maxPrice?: number, // セント単位
+  maxPrice?: number, // 円単位
   limit: number = 20
 ): ScoredGame[] {
   return candidates
