@@ -14,6 +14,7 @@ export default function RecommendationCard({
 }: RecommendationCardProps) {
   const t = useTranslations("recommendations");
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const priceDisplay =
     game.price === null
@@ -29,14 +30,22 @@ export default function RecommendationCard({
         target="_blank"
         rel="noopener noreferrer"
       >
-        <Image
-          src={game.headerImage}
-          alt={game.name}
-          width={460}
-          height={215}
-          className="mb-3 rounded-lg object-cover"
-          unoptimized
-        />
+        {imgError ? (
+          // 画像取得失敗時（DLC・削除済みゲーム等）はプレースホルダーを表示
+          <div className="mb-3 flex h-[107px] w-full items-center justify-center rounded-lg bg-gray-800 text-sm text-gray-600">
+            {game.name}
+          </div>
+        ) : (
+          <Image
+            src={game.headerImage}
+            alt={game.name}
+            width={460}
+            height={215}
+            className="mb-3 rounded-lg object-cover"
+            unoptimized
+            onError={() => setImgError(true)}
+          />
+        )}
       </a>
 
       <h3 className="mb-1.5 truncate text-base font-semibold text-gray-100">
