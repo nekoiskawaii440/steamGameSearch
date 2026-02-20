@@ -45,12 +45,18 @@ export async function getAppDetails(
 
 /**
  * 所持ゲームにジャンル・価格情報を付加
- * 時間バジェット内で可能な限り取得し、残りは pending として返す
+ *
+ * 並列バッチ処理でキャッシュ済みゲームを高速に処理する。
+ * timeBudgetMs 内に完了した分を返し、残りは pendingAppIds に格納する。
+ *
+ * キャッシュヒット時: 並列 20 件でも ~50ms → ほぼ全件処理できる
+ * キャッシュミス時: Steam API は ~200ms/件 → concurrency=10 で ~200ms/batch
  */
 export async function enrichGamesWithDetails(
   games: OwnedGame[],
   locale: string = "ja",
-  timeBudgetMs: number = 7000
+  timeBudgetMs: number = 7000,
+  concurrency: number = 10
 ): Promise<{ enriched: OwnedGameWithDetails[]; pendingAppIds: number[] }> {
   const startTime = Date.now();
   const enriched: OwnedGameWithDetails[] = [];
@@ -61,15 +67,24 @@ export async function enrichGamesWithDetails(
     (a, b) => b.playtime_forever - a.playtime_forever
   );
 
-  for (const game of sorted) {
+  // concurrency 件ずつ並列処理
+  for (let i = 0; i < sorted.length; i += concurrency) {
     if (Date.now() - startTime > timeBudgetMs) {
       // 時間切れ: 残りを pending に追加
-      pendingAppIds.push(game.appid);
-      continue;
+      for (const game of sorted.slice(i)) {
+        pendingAppIds.push(game.appid);
+      }
+      break;
     }
 
-    const details = await getAppDetails(game.appid, locale);
-    enriched.push({ ...game, details: details ?? undefined });
+    const batch = sorted.slice(i, i + concurrency);
+    const results = await Promise.all(
+      batch.map(async (game) => {
+        const details = await getAppDetails(game.appid, locale);
+        return { ...game, details: details ?? undefined };
+      })
+    );
+    enriched.push(...results);
   }
 
   return { enriched, pendingAppIds };

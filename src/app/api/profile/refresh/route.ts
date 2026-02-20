@@ -7,15 +7,19 @@ import { getTagsForTopGames } from "@/lib/steamspy/api";
 import { setCache } from "@/lib/cache/kv";
 
 const TOTAL_BUDGET_MS = 9000; // Vercel 10秒制限に対して余裕を持たせた値
+const ENRICH_BUDGET_MS = 7500; // enrichGamesWithDetails に使う最大時間
 
 /**
  * ジャンルプロファイルを再構築してキャッシュに保存するAPI
  * Recommendations ページの「最適化」ボタンから呼ばれる
  *
  * Phase 3: SteamSpy タグを収集して tagScores をプロファイルに組み込む。
+ * enrichGamesWithDetails は並列化済みなので高速。
+ * キャッシュ済みゲームが多ければほぼ全件を 1-2 秒以内に処理できる。
+ *
  * 時間バジェット管理:
- *   1. enrichGamesWithDetails: 最大 5000ms
- *   2. 残り時間内でプレイ時間上位 20 件のタグ取得（タイムアウト付き）
+ *   1. enrichGamesWithDetails: 最大 7500ms（並列10件ずつ）
+ *   2. 残り時間でプレイ時間上位 20 件のタグ取得（並列、タイムアウト付き）
  */
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -38,11 +42,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ① 時間バジェット内でジャンル情報を追加取得（5秒に削減してタグ取得の余裕を確保）
+    // ① 並列バッチでジャンル情報を追加取得（キャッシュ済みなら全件 1-2秒で完了）
     const { enriched, pendingAppIds } = await enrichGamesWithDetails(
       games,
       locale,
-      5000
+      ENRICH_BUDGET_MS
     );
 
     // ② 残り時間でプレイ時間上位 20 件のタグを取得
