@@ -207,6 +207,69 @@ export async function getSaleGames(): Promise<SteamSpyGame[]> {
   );
 }
 
+/**
+ * SteamSpy の個別 appdetails API でコミュニティタグを取得
+ *
+ * レスポンスの tags フィールド: Record<タグ名, 投票数>
+ * 例: { "Free to Play": 7088, "MOBA": 6788, "Multiplayer": 6724, ... }
+ * キャッシュ: 7日（getAppDetails と同じTTL）
+ * タイムアウト: 3秒
+ */
+export async function getGameTagsSpy(
+  appid: number
+): Promise<Record<string, number>> {
+  return getCached(
+    `steamspy:tags:${appid}`,
+    async () => {
+      try {
+        const res = await fetch(
+          `${STEAMSPY_BASE}?request=appdetails&appid=${appid}`,
+          { signal: AbortSignal.timeout(3000) }
+        );
+        if (!res.ok) return {};
+        const data = await res.json();
+        return (data.tags as Record<string, number>) ?? {};
+      } catch {
+        return {};
+      }
+    },
+    7 * 24 * 3600 // 7日キャッシュ
+  );
+}
+
+/**
+ * プレイ時間上位ゲームのタグをバッチ並列取得
+ *
+ * SteamSpy 無料版は ~1req/sec の制限あり。
+ * キャッシュヒット時は HTTP リクエスト不発生なので待機不要。
+ * キャッシュミス時（初回）のみ concurrency 件ずつバッチ実行 + 350ms 待機でレート制限対応。
+ *
+ * @param appids - 取得対象の appid リスト（プレイ時間上位順推奨）
+ * @param concurrency - 並列数（デフォルト 5）
+ */
+export async function getTagsForTopGames(
+  appids: number[],
+  concurrency: number = 5
+): Promise<Record<number, Record<string, number>>> {
+  const results: Record<number, Record<string, number>> = {};
+
+  for (let i = 0; i < appids.length; i += concurrency) {
+    const batch = appids.slice(i, i + concurrency);
+    const batchResults = await Promise.all(
+      batch.map(async (appid) => ({ appid, tags: await getGameTagsSpy(appid) }))
+    );
+    for (const { appid, tags } of batchResults) {
+      results[appid] = tags;
+    }
+    // レート制限対策: バッチ間 350ms 待機（キャッシュヒット時は実質無視できる）
+    if (i + concurrency < appids.length) {
+      await new Promise((r) => setTimeout(r, 350));
+    }
+  }
+
+  return results;
+}
+
 /** 有効な候補ソース種別 */
 export type PoolSource = "genre" | "classic" | "new" | "trend" | "sale";
 

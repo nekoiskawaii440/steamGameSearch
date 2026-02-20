@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { auth } from "@/auth";
 import { redirect } from "@/i18n/navigation";
 import { getOwnedGames } from "@/lib/steam/api";
-import { enrichGamesWithDetails, enrichScoredGameGenres } from "@/lib/steam/store-api";
+import { enrichGamesWithDetails, enrichScoredGameTags } from "@/lib/steam/store-api";
 import { buildGenreProfile } from "@/lib/recommendation/genre-analyzer";
 import { getRecommendations } from "@/lib/recommendation/scoring";
 import {
@@ -52,9 +52,9 @@ export default async function RecommendationsPage({
     : undefined;
   const enabledSources = parsePoolSources(poolParam);
 
-  // キャッシュからプロファイルを取得、なければ再構築
+  // キャッシュからプロファイルを取得、なければ再構築（v2: playstyle追加）
   let profile = await getCache<GenreProfile>(
-    `user:${steamId}:profile`
+    `user:${steamId}:profile:v2`
   );
 
   let analyzedGameCount = 0;
@@ -87,9 +87,9 @@ export default async function RecommendationsPage({
   // スコアリング（上位20件を選出）
   const scored = getRecommendations(candidates, profile, ownedAppIds);
 
-  // genres が空のゲームに Steam Store appdetails からジャンルを並行補完
+  // genres/categories が空のゲームに Steam Store appdetails から並行補完
   // 20件限定 × 7日キャッシュ付きなので初回のみ fetch、以降は即座に返る
-  const recommendations = await enrichScoredGameGenres(scored);
+  const recommendations = await enrichScoredGameTags(scored);
 
   return (
     <RecommendationsContent

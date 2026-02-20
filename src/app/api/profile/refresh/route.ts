@@ -3,11 +3,19 @@ import { auth } from "@/auth";
 import { getOwnedGames } from "@/lib/steam/api";
 import { enrichGamesWithDetails } from "@/lib/steam/store-api";
 import { buildGenreProfile } from "@/lib/recommendation/genre-analyzer";
+import { getTagsForTopGames } from "@/lib/steamspy/api";
 import { setCache } from "@/lib/cache/kv";
+
+const TOTAL_BUDGET_MS = 9000; // Vercel 10秒制限に対して余裕を持たせた値
 
 /**
  * ジャンルプロファイルを再構築してキャッシュに保存するAPI
  * Recommendations ページの「最適化」ボタンから呼ばれる
+ *
+ * Phase 3: SteamSpy タグを収集して tagScores をプロファイルに組み込む。
+ * 時間バジェット管理:
+ *   1. enrichGamesWithDetails: 最大 5000ms
+ *   2. 残り時間内でプレイ時間上位 20 件のタグ取得（タイムアウト付き）
  */
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -18,6 +26,7 @@ export async function POST(request: NextRequest) {
   const steamId = session.user.id;
   const { searchParams } = new URL(request.url);
   const locale = searchParams.get("locale") ?? "ja";
+  const startTime = Date.now();
 
   try {
     // 所持ゲームを取得（キャッシュ利用）
@@ -29,17 +38,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 時間バジェット内でジャンル情報を追加取得
-    // （既にキャッシュされているゲームは高速で通過する）
+    // ① 時間バジェット内でジャンル情報を追加取得（5秒に削減してタグ取得の余裕を確保）
     const { enriched, pendingAppIds } = await enrichGamesWithDetails(
       games,
       locale,
-      8000 // API ルートなので 8 秒まで使える
+      5000
     );
 
-    // プロファイルを再構築してキャッシュに保存
-    const profile = buildGenreProfile(enriched);
-    await setCache(`user:${steamId}:profile`, profile, 3600);
+    // ② 残り時間でプレイ時間上位 20 件のタグを取得
+    // タイムアウトした場合は空オブジェクトを返し、tagScores={} のプロファイルになる
+    const remaining = TOTAL_BUDGET_MS - (Date.now() - startTime);
+    const topAppIds = [...enriched]
+      .sort((a, b) => b.playtime_forever - a.playtime_forever)
+      .slice(0, 20)
+      .map((g) => g.appid);
+
+    const tagsResult = await Promise.race([
+      getTagsForTopGames(topAppIds, 5),
+      new Promise<Record<number, Record<string, number>>>((resolve) =>
+        setTimeout(() => resolve({}), Math.max(remaining - 500, 0))
+      ),
+    ]);
+
+    // ③ プロファイルを再構築してキャッシュに保存
+    const profile = buildGenreProfile(enriched, tagsResult);
+    await setCache(`user:${steamId}:profile:v2`, profile, 3600);
 
     return NextResponse.json({
       success: true,
@@ -47,6 +70,7 @@ export async function POST(request: NextRequest) {
       totalGames: games.length,
       pendingCount: pendingAppIds.length,
       topGenres: profile.topGenres,
+      topTags: profile.topTags,
     });
   } catch (error) {
     console.error("Profile refresh error:", error);

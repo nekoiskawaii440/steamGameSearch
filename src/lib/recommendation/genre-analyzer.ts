@@ -1,5 +1,5 @@
 import type { OwnedGameWithDetails } from "@/lib/steam/types";
-import type { GenreProfile } from "./types";
+import type { GenreProfile, PlaystyleProfile } from "./types";
 
 /**
  * 所持ゲームのプレイデータからジャンルプロファイルを構築
@@ -10,7 +10,8 @@ import type { GenreProfile } from "./types";
  *   総プレイ時間の比重          × 0.2  ← 過去の嗜好（参考）
  */
 export function buildGenreProfile(
-  games: OwnedGameWithDetails[]
+  games: OwnedGameWithDetails[],
+  tagsByAppId?: Record<number, Record<string, number>> // Phase 3: SteamSpyタグ
 ): GenreProfile {
   // ジャンル情報を持つゲームのみ処理
   const gamesWithGenres = games.filter(
@@ -107,6 +108,49 @@ export function buildGenreProfile(
     0
   );
 
+  // --- ⑤ プレイスタイル集計 (Steam categories をplaytime加重平均) ---
+  // categories は AppDetails に含まれる（getAppDetails で取得済み）
+  // id:2 = Single-player, id:1 = Multi-player, id:9 = Co-op, id:36 = Online Co-op, id:49 = PvP
+  const categoryWeights: Record<number, number> = {};
+  let totalWeight = 0;
+  for (const game of games) {
+    if (!game.details?.categories) continue;
+    const weight = game.playtime_forever + 1; // 0プレイでも1として扱う
+    totalWeight += weight;
+    for (const cat of game.details.categories) {
+      categoryWeights[cat.id] = (categoryWeights[cat.id] ?? 0) + weight;
+    }
+  }
+  const norm = totalWeight > 0 ? totalWeight : 1;
+  const playstyle: PlaystyleProfile = {
+    singlePlayer: (categoryWeights[2]  ?? 0) / norm,
+    multiPlayer:  (categoryWeights[1]  ?? 0) / norm,
+    // co-op は id:9 と id:36 の大きい方で代表（重複加算を避ける）
+    coop: Math.max(categoryWeights[9] ?? 0, categoryWeights[36] ?? 0) / norm,
+    pvp:          (categoryWeights[49] ?? 0) / norm,
+  };
+
+  // --- ⑥ タグスコア計算（tagsByAppId が提供された場合のみ）---
+  // 各ゲームのタグ投票数をゲーム内最大値で正規化 → プレイ時間対数重み付けで合算
+  const tagScoresRaw: Record<string, number> = {};
+  if (tagsByAppId) {
+    for (const game of gamesWithGenres) {
+      const gameTags = tagsByAppId[game.appid];
+      if (!gameTags || Object.keys(gameTags).length === 0) continue;
+      const playtimeWeight = Math.log2(game.playtime_forever + 1);
+      const maxVotes = Math.max(...Object.values(gameTags), 1);
+      for (const [tag, votes] of Object.entries(gameTags)) {
+        const tagWeight = votes / maxVotes; // ゲーム内相対強度 (0-1)
+        tagScoresRaw[tag] = (tagScoresRaw[tag] ?? 0) + playtimeWeight * tagWeight;
+      }
+    }
+  }
+  const tagScores = normalizeScores(tagScoresRaw);
+  const topTags = Object.entries(tagScores)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
+    .map(([tag]) => tag);
+
   return {
     genreScores,
     topGenres,
@@ -117,6 +161,9 @@ export function buildGenreProfile(
     totalGames: games.length,
     totalPlaytimeMinutes: totalPlaytime,
     recentGenreScores: recentNorm,
+    playstyle,
+    tagScores,
+    topTags,
   };
 }
 

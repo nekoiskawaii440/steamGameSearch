@@ -1,5 +1,12 @@
 // ジャンルプロファイル型
 
+export interface PlaystyleProfile {
+  singlePlayer: number; // Single-player (id:2) のplaytime加重比率 (0-1)
+  multiPlayer: number;  // Multi-player (id:1) のplaytime加重比率 (0-1)
+  coop: number;         // Co-op (id:9 or id:36) のplaytime加重比率 (0-1)
+  pvp: number;          // PvP (id:49) のplaytime加重比率 (0-1)
+}
+
 export interface GenreProfile {
   /** ジャンル名 → 正規化スコア (0-1) */
   genreScores: Record<string, number>;
@@ -13,6 +20,12 @@ export interface GenreProfile {
   totalPlaytimeMinutes: number;
   /** 最近2週間のジャンルスコア */
   recentGenreScores: Record<string, number>;
+  /** プレイスタイル傾向 */
+  playstyle: PlaystyleProfile;
+  /** SteamSpyタグ → 正規化スコア (0-1)（Phase 3で有効化、初期は{}） */
+  tagScores: Record<string, number>;
+  /** 上位タグ（Phase 3で有効化、初期は[]） */
+  topTags: string[];
 }
 
 // SteamSpy ゲーム型
@@ -35,13 +48,17 @@ export interface ScoredGame {
   name: string;
   score: number; // 0-100
   scoreBreakdown: {
-    genreMatch: number; // 0-40
-    popularity: number; // 0-20
-    recentTrend: number; // 0-15
-    priceValue: number; // 0-15
-    reviewScore: number; // 0-10
+    genreMatch: number;     // 0-30
+    tagMatch: number;       // 0-15（Phase 3で有効化、それまでは0）
+    playstyleMatch: number; // 0-10
+    popularity: number;     // 0-15
+    recentTrend: number;    // 0-15
+    priceValue: number;     // 0-10
+    reviewScore: number;    // 0-5
   };
   price: number | null; // 円単位, null = 不明
   genres: string[];
+  tags: string[];       // SteamSpyコミュニティタグ（Phase 2で有効化、初期は[]）
+  categories: number[]; // Steam category id[]（初期は[]）
   headerImage: string;
 }

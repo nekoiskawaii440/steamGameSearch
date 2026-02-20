@@ -1,6 +1,7 @@
 import { getCached } from "@/lib/cache/kv";
 import type { AppDetails, AppDetailsResponse, OwnedGame, OwnedGameWithDetails } from "./types";
 import type { ScoredGame } from "@/lib/recommendation/types";
+import { getGameTagsSpy } from "@/lib/steamspy/api";
 
 const STORE_API_BASE = "https://store.steampowered.com/api";
 
@@ -75,27 +76,49 @@ export async function enrichGamesWithDetails(
 }
 
 /**
- * スコアリング済みの推薦ゲームに Steam Store appdetails からジャンルを補完する。
+ * スコアリング済みの推薦ゲームに Steam Store appdetails から
+ * ジャンル・カテゴリを並行補完する。
  *
  * top100forever / top100in2weeks は SteamSpy が genre="" で返すため
  * スコアリング後も genres[] が空になる。
- * 上位N件に限定して getAppDetails を並行フェッチし genres を埋める。
+ * 上位N件に限定して getAppDetails を並行フェッチし genres/categories を埋める。
  * getAppDetails は 7日キャッシュ付きなので初回のみ fetch、以降は即座に返る。
+ * SteamSpy タグの補完は Phase 2 で追加予定。
  */
-export async function enrichScoredGameGenres(
+export async function enrichScoredGameTags(
   games: ScoredGame[]
 ): Promise<ScoredGame[]> {
   return Promise.all(
     games.map(async (game) => {
-      // genres が既に入っていれば何もしない
-      if (game.genres.length > 0) return game;
+      const needsDetails = game.genres.length === 0 || game.categories.length === 0;
+      const needsTags = game.tags.length === 0;
 
-      const details = await getAppDetails(game.appid);
-      if (!details?.genres?.length) return game;
+      // 全て揃っていれば何もしない
+      if (!needsDetails && !needsTags) return game;
+
+      // appdetails と SteamSpy タグを並行取得（7日キャッシュ済みなら即座に返る）
+      const [details, rawTags] = await Promise.all([
+        needsDetails ? getAppDetails(game.appid) : Promise.resolve(null),
+        needsTags    ? getGameTagsSpy(game.appid) : Promise.resolve(null),
+      ]);
+
+      // タグを投票数順に上位8件まで抽出
+      const topTags = rawTags
+        ? Object.entries(rawTags)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 8)
+            .map(([tag]) => tag)
+        : game.tags;
 
       return {
         ...game,
-        genres: details.genres.map((g) => g.description),
+        genres: game.genres.length > 0
+          ? game.genres
+          : (details?.genres?.map((g) => g.description) ?? []),
+        categories: game.categories.length > 0
+          ? game.categories
+          : (details?.categories?.map((c) => c.id) ?? []),
+        tags: topTags,
       };
     })
   );

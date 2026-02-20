@@ -75,6 +75,60 @@ export default function ProfileSummary({
           );
         })}
       </div>
+
+      {/* コミュニティタグ傾向（profile/refresh 後に有効化） */}
+      {profile.topTags.length > 0 && (
+        <div className="mt-4 border-t border-gray-800 pt-4">
+          <h3 className="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Top Tags
+          </h3>
+          <div className="flex flex-wrap gap-1.5">
+            {profile.topTags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded bg-[#66c0f4]/10 px-2 py-0.5 text-xs text-[#66c0f4]/80"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* プレイスタイル傾向 */}
+      {profile.playstyle && (
+        <div className="mt-4 border-t border-gray-800 pt-4">
+          <h3 className="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {t("playstyleTitle")}
+          </h3>
+          <div className="space-y-2">
+            {(
+              [
+                { key: "singlePlayer", label: t("singlePlayer"), value: profile.playstyle.singlePlayer },
+                { key: "multiPlayer",  label: t("multiPlayer"),  value: profile.playstyle.multiPlayer },
+                { key: "coop",         label: t("coop"),          value: profile.playstyle.coop },
+                { key: "pvp",          label: t("pvp"),           value: profile.playstyle.pvp },
+              ] as const
+            ).map(({ key, label, value }) => {
+              const pct = Math.round(value * 100);
+              return (
+                <div key={key} className="flex items-center gap-3">
+                  <span className="w-16 shrink-0 text-sm text-gray-400">{label}</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-gray-800">
+                    <div
+                      className="h-1.5 rounded-full bg-emerald-500/70 transition-all"
+                      style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                  </div>
+                  <span className="w-8 shrink-0 text-right text-xs text-gray-500">
+                    {pct}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -43,15 +43,29 @@ export default function RecommendationCard({
         {game.name}
       </h3>
 
-      {/* ジャンルタグ */}
+      {/* ジャンルタグ（粗いカテゴリ） */}
       {game.genres.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-1">
+        <div className="mb-1 flex flex-wrap gap-1">
           {game.genres.slice(0, 3).map((genre) => (
             <span
               key={genre}
               className="rounded bg-gray-800 px-2 py-0.5 text-xs text-gray-500"
             >
               {genre}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* コミュニティタグ（詳細） */}
+      {game.tags.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {game.tags.slice(0, 5).map((tag) => (
+            <span
+              key={tag}
+              className="rounded bg-[#66c0f4]/10 px-2 py-0.5 text-xs text-[#66c0f4]/70"
+            >
+              {tag}
             </span>
           ))}
         </div>
@@ -76,12 +90,17 @@ export default function RecommendationCard({
           <ScoreBar
             label={t("genreMatch")}
             value={game.scoreBreakdown.genreMatch}
-            max={40}
+            max={30}
+          />
+          <ScoreBar
+            label={t("playstyleMatch")}
+            value={game.scoreBreakdown.playstyleMatch}
+            max={10}
           />
           <ScoreBar
             label={t("popularity")}
             value={game.scoreBreakdown.popularity}
-            max={20}
+            max={15}
           />
           <ScoreBar
             label={t("trend")}
@@ -91,12 +110,12 @@ export default function RecommendationCard({
           <ScoreBar
             label={t("priceValue")}
             value={game.scoreBreakdown.priceValue}
-            max={15}
+            max={10}
           />
           <ScoreBar
             label={t("review")}
             value={game.scoreBreakdown.reviewScore}
-            max={10}
+            max={5}
           />
         </div>
       )}
